@@ -42,6 +42,8 @@ STATUS_TUNE = 8
 statii_str = open("statii.py").read()
 exec statii_str
 
+print "statii"
+print statii
 
 if __name__ == '__main__':
 	dbus_loop = DBusGMainLoop()
@@ -50,14 +52,18 @@ if __name__ == '__main__':
 
 	obj = bus.get_object("im.pidgin.purple.PurpleService", "/im/pidgin/purple/PurpleObject")
 	purple = dbus.Interface(obj, "im.pidgin.purple.PurpleInterface")
-	
+	last_arphid_id = ""
 	def handle_arphid_read_signal(arphid_id):
-		if arphid_id in statii:
+		global last_arphid_id
+		if arphid_id in statii and arphid_id != last_arphid_id:
 			active_accounts = purple.PurpleAccountsGetAllActive()
 			for active_account in active_accounts:
 				presence = purple.PurpleAccountGetPresence(active_account)
 				status_id = purple.PurplePrimitiveGetIdFromType(statii[arphid_id])
-				purple.PurplePresenceSwitchStatus(presence,status_id)			
+				print "setting status to: " + status_id
+				purple.PurplePresenceSwitchStatus(presence,status_id)
+			last_arphid_id = arphid_id			
+	
 
 	arphidd = bus.get_object("com.maethorechannen.arphidtools.Arphidd", "/com/maethorechannen/arphidtools/arphidd")
 	arphidd.connect_to_signal("ArphidReadSignal", handle_arphid_read_signal)

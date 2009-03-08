@@ -25,6 +25,7 @@
 import dbus
 import dbus.service
 import gobject
+import time
 
 from dbus.mainloop.glib import DBusGMainLoop
 from smartcard.System import readers
@@ -59,20 +60,22 @@ class Poller():
 
 	def poll(self):
 		POLL = [0xD4, 0x4A, 0x01, 0x00]
-		data, sw1, sw2 = self.ttag.transmit( get_direct_tx(POLL) )
-		if sw1 == 0x61:
-			data, sw1, sw2 = self.ttag.transmit( get_response(sw2) )
-			if data[2] == 0: #no tag found	
-				#flash led and poll again
-				print "no tag"
-				self.ttag.transmit(get_led_control(0x50, [0x05, 0x05, 0x03, 0x01]))
-				self.poll()
-			else:
-				print data
-				id_length = data[7]
-				arphid_id = reduce(concat, map(btos,data[8:8+id_length]))
-				self.dbus_server.ArphidReadSignal(arphid_id)
-				self.poll()
+		while 1:
+			time.sleep(1)
+			data, sw1, sw2 = self.ttag.transmit( get_direct_tx(POLL) )
+			if sw1 == 0x61:
+				data, sw1, sw2 = self.ttag.transmit( get_response(sw2) )
+				if data[2] == 0: #no tag found	
+					#flash led and poll again
+					print "no tag"
+					#self.ttag.transmit(get_led_control(0x50, [0x05, 0x05, 0x03, 0x01]))
+					self.ttag.transmit(get_led_control(0x50, [0x05, 0x05, 0x01, 0x01]))
+
+				else:
+					print data
+					id_length = data[7]
+					arphid_id = reduce(concat, map(btos,data[8:8+id_length]))
+					self.dbus_server.ArphidReadSignal(arphid_id)
 
 class Arphidd(dbus.service.Object):
 	def __init__(self):
