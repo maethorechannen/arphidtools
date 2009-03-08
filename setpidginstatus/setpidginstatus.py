@@ -38,10 +38,10 @@ STATUS_EXTENDED_AWAY = 6
 STATUS_MOBILE = 7
 STATUS_TUNE = 8
 
-statii = {
-	"04C8FFB9212580": STATUS_AVAILABLE,
-	"045309B9212584": STATUS_AWAY
-}
+#load the statii
+statii_str = open("statii.py").read()
+exec statii_str
+
 
 if __name__ == '__main__':
 	dbus_loop = DBusGMainLoop()
@@ -52,11 +52,12 @@ if __name__ == '__main__':
 	purple = dbus.Interface(obj, "im.pidgin.purple.PurpleInterface")
 	
 	def handle_arphid_read_signal(arphid_id):
-		active_accounts = purple.PurpleAccountsGetAllActive()
-		for active_account in active_accounts:
-			presence = purple.PurpleAccountGetPresence(active_account)
-			status_id = purple.PurplePrimitiveGetIdFromType(statii[arphid_id])
-			purple.PurplePresenceSwitchStatus(presence,status_id)			
+		if arphid_id in statii:
+			active_accounts = purple.PurpleAccountsGetAllActive()
+			for active_account in active_accounts:
+				presence = purple.PurpleAccountGetPresence(active_account)
+				status_id = purple.PurplePrimitiveGetIdFromType(statii[arphid_id])
+				purple.PurplePresenceSwitchStatus(presence,status_id)			
 
 	arphidd = bus.get_object("com.maethorechannen.arphidtools.Arphidd", "/com/maethorechannen/arphidtools/arphidd")
 	arphidd.connect_to_signal("ArphidReadSignal", handle_arphid_read_signal)
