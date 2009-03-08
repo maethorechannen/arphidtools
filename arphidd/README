@@ -1,0 +1,13 @@
+arphidd - an experimental "server" for RFID cards/tags
+
+arphidd is a server for RFID reader events. It reads RFIDs from a reader and sends out signals via dbus.
+
+At the moment, it only sends out a signal for when it has read a card.
+
+It currently only supports 1 type of reader(ACS ACR 38U-CCID 00 00) and only 1 reader attached to the computer.
+
+Currently, there is no install. Just run the arphidd.py script from the command line (it's still very experimental).
+It will crash if a card reader is not attached (at least on my system).
+
+It sits on top of pyscard, so that (and it's dependencies) will need to be installed. Ubuntu Jaunty has this in it's
+repositories, but Ibex doesn't.
