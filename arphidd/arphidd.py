@@ -76,6 +76,7 @@ class Poller():
 					id_length = data[7]
 					arphid_id = reduce(concat, map(btos,data[8:8+id_length]))
 					self.dbus_server.ArphidReadSignal(arphid_id)
+					time.sleep(1)
 
 class Arphidd(dbus.service.Object):
 	def __init__(self):

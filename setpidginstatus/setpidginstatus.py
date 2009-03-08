@@ -65,9 +65,10 @@ if __name__ == '__main__':
 			last_arphid_id = arphid_id			
 	
 
-	arphidd = bus.get_object("com.maethorechannen.arphidtools.Arphidd", "/com/maethorechannen/arphidtools/arphidd")
-	arphidd.connect_to_signal("ArphidReadSignal", handle_arphid_read_signal)
-
+	bus.add_signal_receiver(handle_arphid_read_signal,
+                        dbus_interface="com.maethorechannen.arphidtools.Arphidd",
+                        signal_name="ArphidReadSignal")
+	
 	loop = gobject.MainLoop()
 	loop.run()
 
