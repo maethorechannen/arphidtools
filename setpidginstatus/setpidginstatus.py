@@ -22,24 +22,42 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-"""
-simpleclient.py
-
-This is a simple client for the arphidd server. It listens for read events and prints the rfid id to stdout
-
-"""
 import dbus
 import gobject
 
 from dbus.mainloop.glib import DBusGMainLoop
 
-def handle_arphid_read_signal(arphid_id):
-	print arphid_id
+
+#some constants from http://developer.pidgin.im/wiki/DbusHowto
+STATUS_OFFLINE = 1
+STATUS_AVAILABLE = 2
+STATUS_UNAVAILABLE = 3
+STATUS_INVISIBLE = 4
+STATUS_AWAY = 5
+STATUS_EXTENDED_AWAY = 6
+STATUS_MOBILE = 7
+STATUS_TUNE = 8
+
+statii = {
+	"04C8FFB9212580": STATUS_AVAILABLE,
+	"045309B9212584": STATUS_AWAY
+}
 
 if __name__ == '__main__':
 	dbus_loop = DBusGMainLoop()
 
 	bus = dbus.SessionBus(mainloop=dbus_loop)
+
+	obj = bus.get_object("im.pidgin.purple.PurpleService", "/im/pidgin/purple/PurpleObject")
+	purple = dbus.Interface(obj, "im.pidgin.purple.PurpleInterface")
+	
+	def handle_arphid_read_signal(arphid_id):
+		active_accounts = purple.PurpleAccountsGetAllActive()
+		for active_account in active_accounts:
+			presence = purple.PurpleAccountGetPresence(active_account)
+			status_id = purple.PurplePrimitiveGetIdFromType(statii[arphid_id])
+			purple.PurplePresenceSwitchStatus(presence,status_id)			
+
 	arphidd = bus.get_object("com.maethorechannen.arphidtools.Arphidd", "/com/maethorechannen/arphidtools/arphidd")
 	arphidd.connect_to_signal("ArphidReadSignal", handle_arphid_read_signal)
 
