@@ -1,3 +1,8 @@
+import dbus
+import dbus.service
+import gobject
+
+from dbus.mainloop.glib import DBusGMainLoop
 from smartcard.System import readers
 
 def get_direct_tx(command):
@@ -9,12 +14,18 @@ def get_response(length):
 def get_led_control(led_state, control):
 	return [0xFF, 0x00, 0x40] + [led_state] + [0x04] + control
 
-
 def get_set_retry_time_to_one():
 	return get_direct_tx([0xD4, 0x32, 0x05, 0x00, 0x00, 0x00])
 
+def btos(b):
+	return "%(b)x" % {"b":b}
+
+def concat(s1, s2):
+	return s1 + s2
+
 class Poller():
-	def __init__(self):
+	def __init__(self, dbus_server):
+		self.dbus_server = dbus_server
 		r = readers()
 		self.ttag = r[r.index('ACS ACR 38U-CCID 00 00')].createConnection()
 		self.ttag.connect()
@@ -34,7 +45,30 @@ class Poller():
 				self.poll()
 			else:
 				print data
+				id_length = data[7]
+				arphid_id = reduce(concat, map(btos,data[8:8+id_length]))
+				self.dbus_server.ArphidAttachedSignal(arphid_id)
 				self.poll()
 
-poller = Poller()
-poller.poll()
+class Arphidd(dbus.service.Object):
+	def __init__(self):
+		object_path = '/com/maethorechannen/arphidtools/arphidd'
+		dbus_interface='com.maethorechannen.arphidtools.Arphidd'
+		bus_name = dbus.service.BusName(dbus_interface, bus=dbus.SessionBus())
+		dbus.service.Object.__init__(self, bus_name, object_path)
+
+	@dbus.service.signal('com.maethorechannen.arphidtools.Arphidd')
+	def ArphidAttachedSignal(self, arphid_id):
+		pass
+
+if __name__ == '__main__':
+	dbus_loop = DBusGMainLoop()
+	bus = dbus.SessionBus(mainloop=dbus_loop)
+
+	server = Arphidd()
+
+	poller = Poller(server)
+	poller.poll()
+	loop = gobject.MainLoop()
+	loop.run()
+
